@@ -1,4 +1,5 @@
 use crate::raytrace::RayTracer;
+use ultraviolet::Vec3;
 
 pub struct ImageProvider {
     img: Vec<u8>,
@@ -30,7 +31,7 @@ impl ImageProvider {
         let mut p = 0;
         for y in 0..height {
             for x in 0..width {
-                let (r, g, b) = self.tracer.get_pixel(
+                let Vec3 { x: r, y: g, z: b } = self.tracer.get_pixel(
                     (x as f32 / width as f32) * 2.0 * aspect_ratio - aspect_ratio,
                     (y as f32 / height as f32) * 2.0 - 1.0,
                 );
