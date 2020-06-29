@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 mod image_gen;
+mod ray;
 mod raytrace;
 
 use crate::image_gen::ImageProvider;
@@ -68,7 +71,7 @@ impl EventHandler for Stage {
         let h = h as u16;
 
         let t = Instant::now();
-        let pixels = self.provider.get_next(w, h);
+        let pixels = self.provider.get_next(w as usize, h as usize);
         print!("\rImage gen took {}ms", t.elapsed().as_secs_f32() * 1000.0);
 
         let texture = Texture::from_rgba8(ctx, w, h, &pixels);
