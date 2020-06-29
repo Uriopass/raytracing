@@ -98,9 +98,12 @@ impl EventHandler for Stage {
 }
 
 fn main() {
-    miniquad::start(conf::Conf::default(), |mut ctx| {
-        UserData::owning(Stage::new(&mut ctx), ctx)
-    });
+    let mut conf = conf::Conf::default();
+    conf.window_title = "raytrace".to_owned();
+    conf.window_width = 1280;
+    conf.window_height = 720;
+
+    miniquad::start(conf, |mut ctx| UserData::owning(Stage::new(&mut ctx), ctx));
 }
 
 mod shader {
