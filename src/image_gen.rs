@@ -42,9 +42,9 @@ impl ImageProvider {
                     let c = tracer.get_pixel(x as f32 * w, y as f32 * h, w, h);
 
                     unsafe {
-                        *rgba.get_unchecked_mut(0) = (c.x * 255.999) as u8;
-                        *rgba.get_unchecked_mut(1) = (c.y * 255.999) as u8;
-                        *rgba.get_unchecked_mut(2) = (c.z * 255.999) as u8;
+                        *rgba.get_unchecked_mut(0) = (c.x.sqrt() * 255.999) as u8;
+                        *rgba.get_unchecked_mut(1) = (c.y.sqrt() * 255.999) as u8;
+                        *rgba.get_unchecked_mut(2) = (c.z.sqrt() * 255.999) as u8;
                     }
                 }
             });
