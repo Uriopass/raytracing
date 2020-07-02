@@ -58,13 +58,39 @@ impl EventHandler for Stage {
 
         self.renderer.draw_pixels(ctx, pixels);
     }
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        _keymods: KeyMods,
+        _repeat: bool,
+    ) {
+        const SPEED: f32 = 0.16;
+        match keycode {
+            KeyCode::Right | KeyCode::D => {
+                self.tracer.cam.right(SPEED);
+            }
+            KeyCode::Left | KeyCode::A => {
+                self.tracer.cam.right(-SPEED);
+            }
+            KeyCode::Up | KeyCode::W => {
+                self.tracer.cam.forward(SPEED);
+            }
+            KeyCode::Down | KeyCode::S => {
+                self.tracer.cam.forward(-SPEED);
+            }
+            _ => {}
+        }
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
 
     fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
         if let Some((lx, ly)) = self.last {
-            self.tracer.cam.eye_horiz(0.001 * (x - lx) as f32);
+            self.tracer.cam.eye_horiz(0.003 * (x - lx) as f32);
             self.tracer
                 .cam
-                .eye_vert(0.001 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
+                .eye_vert(0.003 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
             self.last = Some((x, y));
         }
     }
