@@ -1,13 +1,15 @@
 use crate::hittable::{Hit, Hittable};
+use crate::material::Material;
 use crate::ray::Ray;
 use ultraviolet::Vec3;
 
-pub struct Sphere {
+pub struct Sphere<T: Material> {
     pub center: Vec3,
     pub radius: f32,
+    pub mat: T,
 }
 
-impl Hittable for Sphere {
+impl<T: Material> Hittable for Sphere<T> {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         let oc = r.pos - self.center;
 
@@ -30,6 +32,6 @@ impl Hittable for Sphere {
 
         let p = r.at(t);
         let outward_normal = (p - self.center) / self.radius;
-        Some(Hit::new(r, p, outward_normal, t))
+        Some(Hit::new(r, p, outward_normal, t, &self.mat))
     }
 }

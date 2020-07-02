@@ -1,5 +1,6 @@
 pub mod sphere;
 
+use crate::material::Material;
 use crate::ray::Ray;
 use ordered_float::OrderedFloat;
 use std::ops::Deref;
@@ -25,19 +26,22 @@ impl<T: Hittable> Hittable for &[T] {
 
 impl<T: Hittable> Hittable for Vec<T> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        self.as_slice().hit(ray, t_min, t_max)
+        self.iter()
+            .filter_map(move |x| x.hit(ray, t_min, t_max))
+            .min_by_key(|rec| OrderedFloat(rec.t))
     }
 }
 
-pub struct Hit {
+pub struct Hit<'a> {
     pub p: Vec3,
     pub normal: Vec3,
     pub t: f32,
     pub front_face: bool,
+    pub mat: &'a dyn Material,
 }
 
-impl Hit {
-    pub fn new(ray: &Ray, p: Vec3, outward_normal: Vec3, t: f32) -> Self {
+impl<'a> Hit<'a> {
+    pub fn new(ray: &Ray, p: Vec3, outward_normal: Vec3, t: f32, mat: &'a dyn Material) -> Self {
         let front_face = ray.dir.dot(outward_normal) < 0.0;
 
         let normal = if front_face {
@@ -51,6 +55,7 @@ impl Hit {
             normal,
             t,
             front_face,
+            mat,
         }
     }
 }

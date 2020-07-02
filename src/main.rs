@@ -1,6 +1,7 @@
 mod camera;
 mod hittable;
 mod image_gen;
+mod material;
 mod ray;
 mod raytrace;
 mod render;
@@ -9,10 +10,12 @@ mod utils;
 use crate::hittable::sphere::Sphere;
 use crate::hittable::Hittable;
 use crate::image_gen::ImageProvider;
+use crate::material::Lambertian;
 use crate::raytrace::{vec3, RayTracer};
 use crate::render::Renderer;
 use miniquad::*;
 use std::time::Instant;
+use ultraviolet::Vec3;
 
 struct Stage {
     renderer: Renderer,
@@ -28,11 +31,14 @@ impl Stage {
         world.push(Box::new(Sphere {
             center: vec3(0.5, 0.0, -1.0),
             radius: 0.5,
+            mat: Lambertian::new(Vec3::unit_x()),
         }));
 
         world.push(Box::new(Sphere {
             center: vec3(0.0, -100.5, -1.0),
             radius: 100.0,
+
+            mat: Lambertian::new(Vec3::broadcast(1.0)),
         }));
 
         Stage {
@@ -99,7 +105,7 @@ impl EventHandler for Stage {
         self.last = Some((x, y));
     }
 
-    fn mouse_button_up_event(&mut self, _: &mut Context, _: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(&mut self, _: &mut Context, _: MouseButton, _x: f32, _y: f32) {
         self.last = None;
     }
 }

@@ -1,6 +1,6 @@
 use crate::ray::Ray;
 use crate::raytrace::vec3;
-use ultraviolet::{Rotor3, Vec3};
+use ultraviolet::Vec3;
 
 pub struct Camera {
     pub pos: Vec3,
