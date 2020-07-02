@@ -1,6 +1,10 @@
 use crate::ray::Ray;
 use ultraviolet::Vec3;
 
+fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
+    Vec3 { x, y, z }
+}
+
 type Color = Vec3;
 
 pub struct RayTracer {
@@ -17,13 +21,15 @@ impl RayTracer {
     }
 
     fn ray_color(&self, ray: Ray) -> Color {
-        if hit_sphere(Vec3::new(0.0, 0.0, -1.0), 0.5, &ray) {
-            return Vec3::new(1.0, 0.0, 0.0);
+        let sphere_pos = Vec3::new(0.0, 0.0, -1.0);
+        let t = hit_sphere(sphere_pos, 0.5, &ray);
+        if let Some(t) = t {
+            let normal = (ray.at(t) - sphere_pos).normalized();
+            return Vec3::broadcast(0.5) + normal * 0.5;
         }
 
-        const BLUE: f32 = 0.6;
         let v = 0.5 * ray.dir.normalized().y + 0.5;
-        Vec3::new(1.0 - v * BLUE, 1.0 - v * BLUE * 0.9, 1.0)
+        (1.0 - v) * vec3(1.0, 1.0, 1.0) + v * vec3(0.5, 0.7, 1.0)
     }
 
     pub fn get_pixel(&self, x: f32, y: f32) -> Color {
@@ -36,11 +42,15 @@ impl RayTracer {
     }
 }
 
-fn hit_sphere(center: Vec3, radius: f32, r: &Ray) -> bool {
+fn hit_sphere(center: Vec3, radius: f32, r: &Ray) -> Option<f32> {
     let oc = r.orig - center;
-    let a = r.dir.dot(r.dir);
-    let b = 2.0 * oc.dot(r.dir);
+    let a = r.dir.mag_sq();
+    let half_b = oc.dot(r.dir);
     let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    return discriminant > 0.0;
+    let discriminant = half_b * half_b - a * c;
+    if discriminant < 0.0 {
+        None
+    } else {
+        Some((-half_b - discriminant.sqrt()) / a)
+    }
 }
