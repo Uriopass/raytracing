@@ -39,7 +39,7 @@ impl ImageProvider {
             .enumerate()
             .for_each(move |(y, line)| {
                 for (x, rgba) in line.chunks_exact_mut(4).enumerate() {
-                    let c = tracer.get_pixel(x as f32 * w, y as f32 * h, w, h, 1);
+                    let c = tracer.get_pixel(x as f32 * w, y as f32 * h, w, h);
 
                     unsafe {
                         *rgba.get_unchecked_mut(0) = (c.x * 255.999) as u8;
