@@ -1,16 +1,30 @@
-use crate::raytrace::RayTracer;
+use crate::hittable::sphere::Sphere;
+use crate::hittable::Hittable;
+use crate::raytrace::{vec3, RayTracer};
 use ultraviolet::Vec3;
 
 pub struct ImageProvider {
     img: Vec<u8>,
-    tracer: RayTracer,
+    tracer: RayTracer<Vec<Box<dyn Hittable>>>,
 }
 
 impl ImageProvider {
     pub fn new() -> Self {
+        let mut world: Vec<Box<dyn Hittable>> = vec![];
+
+        world.push(Box::new(Sphere {
+            center: vec3(0.0, 0.0, -1.0),
+            radius: 0.5,
+        }));
+
+        world.push(Box::new(Sphere {
+            center: vec3(0.0, -100.5, -1.0),
+            radius: 100.0,
+        }));
+
         Self {
             img: vec![],
-            tracer: RayTracer::new(),
+            tracer: RayTracer::new(world),
         }
     }
 

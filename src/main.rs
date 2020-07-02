@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod hittable;
 mod image_gen;
 mod ray;
 mod raytrace;
@@ -72,7 +73,7 @@ impl EventHandler for Stage {
 
         let t = Instant::now();
         let pixels = self.provider.get_next(w as usize, h as usize);
-        print!("\rImage gen took {}ms", t.elapsed().as_secs_f32() * 1000.0);
+        print!("Image gen took {}ms\n", t.elapsed().as_secs_f32() * 1000.0);
 
         let texture = Texture::from_rgba8(ctx, w, h, &pixels);
 
