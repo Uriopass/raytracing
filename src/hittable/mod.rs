@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use std::ops::Deref;
 use ultraviolet::Vec3;
 
-pub trait Hittable {
+pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
 }
 

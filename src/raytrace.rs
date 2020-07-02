@@ -9,13 +9,13 @@ pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
 
 type Color = Vec3;
 
-pub struct RayTracer<T: Hittable> {
+pub struct RayTracer<T: Hittable + Sync> {
     pub cam: Camera,
     gen: RayGenerator,
     world: T,
 }
 
-impl<T: Hittable> RayTracer<T> {
+impl<T: Hittable + Sync> RayTracer<T> {
     pub fn new(world: T) -> Self {
         let cam = Camera::default();
         let gen = cam.ray_generator();
@@ -35,8 +35,15 @@ impl<T: Hittable> RayTracer<T> {
         self.gen = self.cam.ray_generator();
     }
 
-    pub fn get_pixel(&self, x: f32, y: f32, samples: u32) -> Color {
-        let ray = self.gen.ray(x, y);
-        self.ray_color(&ray)
+    pub fn get_pixel(&self, x: f32, y: f32, resx: f32, resy: f32, samples: u32) -> Color {
+        let mut col = Color::zero();
+        for _ in 0..samples {
+            let ray = self.gen.ray(
+                x + resx * rand::random::<f32>(),
+                y + resy * rand::random::<f32>(),
+            );
+            col += self.ray_color(&ray);
+        }
+        col / samples as f32
     }
 }
