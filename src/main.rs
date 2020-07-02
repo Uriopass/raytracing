@@ -17,41 +17,89 @@ use miniquad::*;
 use std::time::Instant;
 use ultraviolet::Vec3;
 
+type HittableList = Vec<Box<dyn Hittable>>;
+
 struct Stage {
     renderer: Renderer,
     provider: ImageProvider,
-    tracer: RayTracer<Vec<Box<dyn Hittable>>>,
+    tracer: RayTracer<HittableList>,
     last: Option<(f32, f32)>,
+}
+
+fn random_scene() -> HittableList {
+    let mut world: HittableList = vec![];
+
+    world.push(Box::new(Sphere {
+        center: vec3(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        mat: Lambertian::new(Vec3::broadcast(0.5)),
+    }));
+
+    for a in -5..5 {
+        for b in -5..5 {
+            let choose_mat = rand::random::<f32>();
+            let center = vec3(
+                a as f32 + 0.9 * rand::random::<f32>(),
+                0.2,
+                b as f32 + 0.9 * rand::random::<f32>(),
+            );
+
+            if (center - vec3(4.0, 0.2, 0.0)).mag() > 0.9 {
+                if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = Vec3::from(rand::random::<[f32; 3]>())
+                        * Vec3::from(rand::random::<[f32; 3]>());
+                    world.push(Box::new(Sphere {
+                        center,
+                        radius: 0.2,
+                        mat: Lambertian::new(albedo),
+                    }));
+                } else if choose_mat < 0.95 {
+                    // metal
+                    let albedo =
+                        Vec3::broadcast(0.5) + Vec3::from(rand::random::<[f32; 3]>()) * 0.5;
+                    let fuzz = rand::random::<f32>() * 0.5;
+                    world.push(Box::new(Sphere {
+                        center,
+                        radius: 0.2,
+                        mat: Metal::new(albedo, fuzz),
+                    }));
+                } else {
+                    // glass
+                    world.push(Box::new(Sphere {
+                        center,
+                        radius: 0.2,
+                        mat: Dielectric::new(1.5),
+                    }));
+                }
+            }
+        }
+    }
+
+    world.push(Box::new(Sphere {
+        center: vec3(0.0, 1.0, 0.0),
+        radius: 1.0,
+        mat: Dielectric::new(1.5),
+    }));
+
+    world.push(Box::new(Sphere {
+        center: vec3(-4.0, 1.0, 0.0),
+        radius: 1.0,
+        mat: Lambertian::new(vec3(0.4, 0.2, 0.1)),
+    }));
+
+    world.push(Box::new(Sphere {
+        center: vec3(4.0, 1.0, 0.0),
+        radius: 1.0,
+        mat: Metal::new(vec3(0.7, 0.6, 0.5), 0.0),
+    }));
+
+    return world;
 }
 
 impl Stage {
     pub fn new(ctx: &mut Context) -> Stage {
-        let mut world: Vec<Box<dyn Hittable>> = vec![];
-
-        world.push(Box::new(Sphere {
-            center: vec3(0.5, 0.0, -1.0),
-            radius: 0.5,
-            mat: Lambertian::new(Vec3::unit_x()),
-        }));
-
-        world.push(Box::new(Sphere {
-            center: vec3(-0.5, 0.0, -1.0),
-            radius: 0.5,
-            mat: Metal::new(Vec3::broadcast(1.0), 1.0),
-        }));
-
-        world.push(Box::new(Sphere {
-            center: vec3(1.5, 0.0, -1.0),
-            radius: 0.5,
-            mat: Dielectric::new(1.5),
-        }));
-
-        world.push(Box::new(Sphere {
-            center: vec3(0.0, -100.5, -1.0),
-            radius: 100.0,
-
-            mat: Lambertian::new(Vec3::broadcast(1.0)),
-        }));
+        let world = random_scene();
 
         Stage {
             renderer: Renderer::new(ctx),
@@ -97,6 +145,12 @@ impl EventHandler for Stage {
             KeyCode::Down | KeyCode::S => {
                 self.tracer.cam.forward(-SPEED);
             }
+            KeyCode::Space => {
+                self.tracer.cam.up(SPEED);
+            }
+            KeyCode::LeftShift => {
+                self.tracer.cam.up(-SPEED);
+            }
             _ => {}
         }
     }
@@ -125,8 +179,8 @@ impl EventHandler for Stage {
 fn main() {
     let mut conf = conf::Conf::default();
     conf.window_title = "raytrace".to_owned();
-    conf.window_width = 1280;
-    conf.window_height = 720;
+    conf.window_width = 1280 / 4;
+    conf.window_height = 720 / 4;
 
     miniquad::start(conf, |mut ctx| UserData::owning(Stage::new(&mut ctx), ctx));
 }

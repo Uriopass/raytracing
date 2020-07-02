@@ -13,7 +13,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: vec3(1.0, 0.0, 0.0),
+            pos: vec3(3.0, 3.0, 0.0),
             eye: Vec3::unit_z(),
             up: Vec3::unit_y(),
             fov: 80.0,
@@ -50,6 +50,10 @@ impl Camera {
             horiz: horizontal,
             vert: vertical,
         }
+    }
+
+    pub fn up(&mut self, amt: f32) {
+        self.pos += self.up * amt;
     }
 
     pub fn forward(&mut self, amt: f32) {
