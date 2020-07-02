@@ -27,14 +27,14 @@ impl<T: Hittable + Sync> RayTracer<T> {
 
     fn ray_color(&self, ray: &Ray, depth: u32) -> Color {
         if depth > 0 {
-            if let Some(hit) = self.world.hit(ray, 0.01, std::f32::INFINITY) {
+            if let Some(hit) = self.world.hit(ray, 0.001, std::f32::INFINITY) {
                 let bounce_dir = (hit.normal + random_in_sphere()).normalized();
                 return 0.5 * self.ray_color(&Ray::new(hit.p, bounce_dir), depth - 1);
             }
         }
 
         let v = 0.5 * ray.dir.y + 0.5;
-        (1.0 - v) * vec3(0.98, 0.98, 0.98) + v * vec3(0.5, 0.7, 1.0)
+        (1.0 - v) * vec3(1.0, 1.0, 1.0) + v * vec3(0.5, 0.7, 1.0)
     }
 
     pub fn init(&mut self) {
