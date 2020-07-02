@@ -37,6 +37,8 @@ impl<T: Hittable + Sync> RayTracer<T> {
                 }
                 return Vec3::zero();
             }
+        } else {
+            return Vec3::zero();
         }
 
         let v = 0.5 * ray.dir.y + 0.5;

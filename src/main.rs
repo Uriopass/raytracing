@@ -10,7 +10,7 @@ mod utils;
 use crate::hittable::sphere::Sphere;
 use crate::hittable::Hittable;
 use crate::image_gen::ImageProvider;
-use crate::material::Lambertian;
+use crate::material::{Dielectric, Lambertian, Metal};
 use crate::raytrace::{vec3, RayTracer};
 use crate::render::Renderer;
 use miniquad::*;
@@ -32,6 +32,18 @@ impl Stage {
             center: vec3(0.5, 0.0, -1.0),
             radius: 0.5,
             mat: Lambertian::new(Vec3::unit_x()),
+        }));
+
+        world.push(Box::new(Sphere {
+            center: vec3(-0.5, 0.0, -1.0),
+            radius: 0.5,
+            mat: Metal::new(Vec3::broadcast(1.0), 1.0),
+        }));
+
+        world.push(Box::new(Sphere {
+            center: vec3(1.5, 0.0, -1.0),
+            radius: 0.5,
+            mat: Dielectric::new(1.5),
         }));
 
         world.push(Box::new(Sphere {
