@@ -39,11 +39,13 @@ pub struct Hit {
 impl Hit {
     pub fn new(ray: &Ray, p: Vec3, outward_normal: Vec3, t: f32) -> Self {
         let front_face = ray.dir.dot(outward_normal) < 0.0;
+
         let normal = if front_face {
             outward_normal
         } else {
             -outward_normal
         };
+
         Self {
             p,
             normal,

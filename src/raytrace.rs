@@ -1,6 +1,7 @@
 use crate::camera::{Camera, RayGenerator};
 use crate::hittable::Hittable;
 use crate::ray::Ray;
+use crate::utils::random_in_sphere;
 use ultraviolet::Vec3;
 
 pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
@@ -15,7 +16,7 @@ pub struct RayTracer<T: Hittable + Sync> {
     world: T,
 }
 
-const SAMPLES: usize = 4;
+const SAMPLES: usize = 8;
 
 impl<T: Hittable + Sync> RayTracer<T> {
     pub fn new(world: T) -> Self {
@@ -24,13 +25,16 @@ impl<T: Hittable + Sync> RayTracer<T> {
         Self { world, cam, gen }
     }
 
-    fn ray_color(&self, ray: &Ray) -> Color {
-        if let Some(hit) = self.world.hit(ray, 0.0, std::f32::INFINITY) {
-            return Vec3::broadcast(0.5) + hit.normal * 0.5;
+    fn ray_color(&self, ray: &Ray, depth: u32) -> Color {
+        if depth > 0 {
+            if let Some(hit) = self.world.hit(ray, 0.01, std::f32::INFINITY) {
+                let bounce_dir = (hit.normal + random_in_sphere()).normalized();
+                return 0.5 * self.ray_color(&Ray::new(hit.p, bounce_dir), depth - 1);
+            }
         }
 
-        let v = 0.5 * ray.dir.normalized().y + 0.5;
-        (1.0 - v) * vec3(1.0, 1.0, 1.0) + v * vec3(0.5, 0.7, 1.0)
+        let v = 0.5 * ray.dir.y + 0.5;
+        (1.0 - v) * vec3(0.98, 0.98, 0.98) + v * vec3(0.5, 0.7, 1.0)
     }
 
     pub fn init(&mut self) {
@@ -44,7 +48,7 @@ impl<T: Hittable + Sync> RayTracer<T> {
                 x + resx * rand::random::<f32>(),
                 y + resy * rand::random::<f32>(),
             );
-            col += self.ray_color(&ray);
+            col += self.ray_color(&ray, 4);
         }
         col / SAMPLES as f32
     }

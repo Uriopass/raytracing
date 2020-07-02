@@ -1,4 +1,5 @@
 use crate::ray::Ray;
+use crate::raytrace::vec3;
 use ultraviolet::{Rotor3, Vec3};
 
 pub struct Camera {
@@ -12,7 +13,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: Vec3::zero(),
+            pos: vec3(1.0, 0.0, 0.0),
             eye: Rotor3::identity(),
             up: Vec3::unit_y(),
             fov: 80.0,
@@ -57,19 +58,19 @@ impl Camera {
     }
 
     pub fn eye_horiz(&mut self, ang: f32) {
-        self.eye = self.eye * Rotor3::from_euler_angles(0.0, 0.0, ang);
+        self.eye = Rotor3::from_euler_angles(0.0, 0.0, ang as f32) * self.eye;
     }
 
     pub fn eye_vert(&mut self, ang: f32) {
-        self.eye = self.eye * Rotor3::from_euler_angles(0.0, -ang, 0.0);
+        self.eye = Rotor3::from_euler_angles(0.0, -ang as f32, 0.0) * self.eye;
     }
 }
 
 impl RayGenerator {
     pub fn ray(&self, u: f32, v: f32) -> Ray {
-        Ray {
-            orig: self.pos,
-            dir: self.ll + self.horiz * u + self.vert * v,
-        }
+        Ray::new(
+            self.pos,
+            (self.ll + self.horiz * u + self.vert * v).normalized(),
+        )
     }
 }

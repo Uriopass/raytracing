@@ -26,7 +26,7 @@ impl Stage {
         let mut world: Vec<Box<dyn Hittable>> = vec![];
 
         world.push(Box::new(Sphere {
-            center: vec3(0.0, 0.0, -1.0),
+            center: vec3(0.5, 0.0, -1.0),
             radius: 0.5,
         }));
 
@@ -61,10 +61,10 @@ impl EventHandler for Stage {
 
     fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
         if let Some((lx, ly)) = self.last {
-            self.tracer.cam.eye_horiz(0.001 * (x - lx));
+            self.tracer.cam.eye_horiz(0.001 * (x - lx) as f32);
             self.tracer
                 .cam
-                .eye_vert(0.001 * (y - ly) * self.tracer.cam.aspect_ratio);
+                .eye_vert(0.001 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
             self.last = Some((x, y));
         }
     }
