@@ -18,6 +18,7 @@ struct Stage {
     renderer: Renderer,
     provider: ImageProvider,
     tracer: RayTracer<Vec<Box<dyn Hittable>>>,
+    last: Option<(f32, f32)>,
 }
 
 impl Stage {
@@ -38,6 +39,7 @@ impl Stage {
             renderer: Renderer::new(ctx),
             provider: ImageProvider::new(),
             tracer: RayTracer::new(world),
+            last: None,
         }
     }
 }
@@ -57,9 +59,22 @@ impl EventHandler for Stage {
         self.renderer.draw_pixels(ctx, pixels);
     }
 
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.last = Some((x, y));
+    }
+
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.last = None;
+    }
+
     fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
-        self.tracer.cam.eye_horiz(x * 0.01);
-        self.tracer.cam.eye_vert(y * 0.01);
+        if let Some((lx, ly)) = self.last {
+            self.tracer.cam.eye_horiz(0.001 * (x - lx));
+            self.tracer
+                .cam
+                .eye_vert(0.001 * (y - ly) * self.tracer.cam.aspect_ratio);
+            self.last = Some((x, y));
+        }
     }
 }
 

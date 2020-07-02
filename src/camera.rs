@@ -57,11 +57,11 @@ impl Camera {
     }
 
     pub fn eye_horiz(&mut self, ang: f32) {
-        self.eye.rotate_by(Rotor3::from_euler_angles(0.0, ang, 0.0));
+        self.eye = self.eye * Rotor3::from_euler_angles(0.0, 0.0, ang);
     }
 
     pub fn eye_vert(&mut self, ang: f32) {
-        self.eye.rotate_by(Rotor3::from_euler_angles(0.0, 0.0, ang));
+        self.eye = self.eye * Rotor3::from_euler_angles(0.0, -ang, 0.0);
     }
 }
 
