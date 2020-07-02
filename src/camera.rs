@@ -4,7 +4,7 @@ use ultraviolet::{Rotor3, Vec3};
 
 pub struct Camera {
     pub pos: Vec3,
-    pub eye: Rotor3,
+    pub eye: Vec3,
     pub up: Vec3,
     pub fov: f32,
     pub aspect_ratio: f32,
@@ -14,7 +14,7 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             pos: vec3(1.0, 0.0, 0.0),
-            eye: Rotor3::identity(),
+            eye: Vec3::unit_z(),
             up: Vec3::unit_y(),
             fov: 80.0,
             aspect_ratio: 16.0 / 9.0,
@@ -37,13 +37,12 @@ impl Camera {
         let viewport_height = 2.0 * h;
         let viewport_width = self.aspect_ratio * viewport_height;
 
-        let w = self.eye * Vec3::unit_z();
-        let u = self.up.cross(w).normalized();
-        let v = w.cross(u);
+        let u = self.up.cross(self.eye).normalized();
+        let v = self.eye.cross(u);
 
         let horizontal = viewport_width * u;
         let vertical = viewport_height * v;
-        let lower_left_corner = -horizontal / 2.0 - vertical / 2.0 - w;
+        let lower_left_corner = -horizontal / 2.0 - vertical / 2.0 - self.eye;
 
         RayGenerator {
             pos: self.pos,
@@ -53,16 +52,34 @@ impl Camera {
         }
     }
 
-    pub fn translate(&mut self, vec: Vec3) {
-        self.pos += vec;
+    pub fn forward(&mut self, amt: f32) {
+        let w = self.eye;
+        let d = w.dot(self.up);
+        let p = w - d * self.up;
+
+        self.pos += -p * amt;
+    }
+
+    pub fn right(&mut self, amt: f32) {
+        let w = self.eye;
+
+        let w = self.up.cross(w).normalized();
+        let d = w.dot(self.up);
+        let p = w - d * self.up;
+
+        self.pos += p * amt;
     }
 
     pub fn eye_horiz(&mut self, ang: f32) {
-        self.eye = Rotor3::from_euler_angles(0.0, 0.0, ang as f32) * self.eye;
+        let w = self.up.cross(self.eye).normalized();
+        let d = w.dot(self.up);
+        let p = w - d * self.up;
+
+        self.eye = (self.eye - p * ang).normalized();
     }
 
     pub fn eye_vert(&mut self, ang: f32) {
-        self.eye = Rotor3::from_euler_angles(0.0, -ang as f32, 0.0) * self.eye;
+        self.eye = (self.eye + self.up * ang).normalized();
     }
 }
 
