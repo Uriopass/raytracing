@@ -1,64 +1,43 @@
-#![allow(dead_code)]
-
+mod camera;
 mod hittable;
 mod image_gen;
 mod ray;
 mod raytrace;
+mod render;
+mod utils;
 
+use crate::hittable::sphere::Sphere;
+use crate::hittable::Hittable;
 use crate::image_gen::ImageProvider;
+use crate::raytrace::{vec3, RayTracer};
+use crate::render::Renderer;
 use miniquad::*;
 use std::time::Instant;
 
-#[repr(C)]
-struct Vec2 {
-    x: f32,
-    y: f32,
-}
-
-#[repr(C)]
-struct Vertex {
-    pos: Vec2,
-    uv: Vec2,
-}
-
 struct Stage {
-    pipeline: Pipeline,
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
+    renderer: Renderer,
     provider: ImageProvider,
+    tracer: RayTracer<Vec<Box<dyn Hittable>>>,
 }
 
 impl Stage {
     pub fn new(ctx: &mut Context) -> Stage {
-        #[rustfmt::skip]
-            let vertices: [Vertex; 4] = [
-            Vertex { pos : Vec2 { x: -1.0, y: -1.0 }, uv: Vec2 { x: 0., y: 0. } },
-            Vertex { pos : Vec2 { x:  1.0, y: -1.0 }, uv: Vec2 { x: 1., y: 0. } },
-            Vertex { pos : Vec2 { x:  1.0, y:  1.0 }, uv: Vec2 { x: 1., y: 1. } },
-            Vertex { pos : Vec2 { x: -1.0, y:  1.0 }, uv: Vec2 { x: 0., y: 1. } },
-        ];
-        let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
+        let mut world: Vec<Box<dyn Hittable>> = vec![];
 
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-        let index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
+        world.push(Box::new(Sphere {
+            center: vec3(0.0, 0.0, -1.0),
+            radius: 0.5,
+        }));
 
-        let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::META).unwrap();
-
-        let pipeline = Pipeline::new(
-            ctx,
-            &[BufferLayout::default()],
-            &[
-                VertexAttribute::new("pos", VertexFormat::Float2),
-                VertexAttribute::new("uv", VertexFormat::Float2),
-            ],
-            shader,
-        );
+        world.push(Box::new(Sphere {
+            center: vec3(0.0, -100.5, -1.0),
+            radius: 100.0,
+        }));
 
         Stage {
-            vertex_buffer,
-            index_buffer,
-            pipeline,
+            renderer: Renderer::new(ctx),
             provider: ImageProvider::new(),
+            tracer: RayTracer::new(world),
         }
     }
 }
@@ -68,33 +47,19 @@ impl EventHandler for Stage {
 
     fn draw(&mut self, ctx: &mut Context) {
         let (w, h) = ctx.screen_size();
-        let w = w as u16;
-        let h = h as u16;
 
         let t = Instant::now();
-        let pixels = self.provider.get_next(w as usize, h as usize);
+        let pixels = self
+            .provider
+            .get_next(&mut self.tracer, w as usize, h as usize);
         print!("Image gen took {}ms\n", t.elapsed().as_secs_f32() * 1000.0);
 
-        let texture = Texture::from_rgba8(ctx, w, h, &pixels);
+        self.renderer.draw_pixels(ctx, pixels);
+    }
 
-        let bindings = Bindings {
-            vertex_buffers: vec![self.vertex_buffer],
-            index_buffer: self.index_buffer,
-            images: vec![texture],
-        };
-
-        ctx.begin_default_pass(Default::default());
-
-        ctx.apply_pipeline(&self.pipeline);
-        ctx.apply_bindings(&bindings);
-
-        ctx.apply_uniforms(&shader::Uniforms { offset: (0.0, 0.0) });
-
-        ctx.draw(0, self.index_buffer.size() as i32, 1);
-
-        ctx.end_render_pass();
-
-        ctx.commit_frame();
+    fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
+        self.tracer.cam.eye_horiz(x * 0.01);
+        self.tracer.cam.eye_vert(y * 0.01);
     }
 }
 

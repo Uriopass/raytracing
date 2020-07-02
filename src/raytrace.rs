@@ -1,3 +1,4 @@
+use crate::camera::{Camera, RayGenerator};
 use crate::hittable::Hittable;
 use crate::ray::Ray;
 use ultraviolet::Vec3;
@@ -9,18 +10,16 @@ pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
 type Color = Vec3;
 
 pub struct RayTracer<T: Hittable> {
-    origin: Vec3,
-    focal_length: f32,
+    pub cam: Camera,
+    gen: RayGenerator,
     world: T,
 }
 
 impl<T: Hittable> RayTracer<T> {
     pub fn new(world: T) -> Self {
-        Self {
-            origin: Vec3::zero(),
-            focal_length: 1.0,
-            world,
-        }
+        let cam = Camera::default();
+        let gen = cam.ray_generator();
+        Self { world, cam, gen }
     }
 
     fn ray_color(&self, ray: &Ray) -> Color {
@@ -32,12 +31,12 @@ impl<T: Hittable> RayTracer<T> {
         (1.0 - v) * vec3(1.0, 1.0, 1.0) + v * vec3(0.5, 0.7, 1.0)
     }
 
-    pub fn get_pixel(&self, x: f32, y: f32) -> Color {
-        let ray = Ray {
-            orig: self.origin,
-            dir: Vec3::new(x, y, -self.focal_length) - self.origin,
-        };
+    pub fn init(&mut self) {
+        self.gen = self.cam.ray_generator();
+    }
 
+    pub fn get_pixel(&self, x: f32, y: f32, samples: u32) -> Color {
+        let ray = self.gen.ray(x, y);
         self.ray_color(&ray)
     }
 }
