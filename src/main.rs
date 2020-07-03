@@ -135,21 +135,27 @@ impl EventHandler for Stage {
         match keycode {
             KeyCode::Right | KeyCode::D => {
                 self.tracer.cam.right(SPEED);
+                self.provider.moved();
             }
             KeyCode::Left | KeyCode::A => {
                 self.tracer.cam.right(-SPEED);
+                self.provider.moved();
             }
             KeyCode::Up | KeyCode::W => {
                 self.tracer.cam.forward(SPEED);
+                self.provider.moved();
             }
             KeyCode::Down | KeyCode::S => {
                 self.tracer.cam.forward(-SPEED);
+                self.provider.moved();
             }
             KeyCode::Space => {
                 self.tracer.cam.up(SPEED);
+                self.provider.moved();
             }
             KeyCode::LeftShift => {
                 self.tracer.cam.up(-SPEED);
+                self.provider.moved();
             }
             _ => {}
         }
@@ -163,6 +169,7 @@ impl EventHandler for Stage {
             self.tracer
                 .cam
                 .eye_vert(0.003 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
+            self.provider.moved();
             self.last = Some((x, y));
         }
     }

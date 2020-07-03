@@ -16,8 +16,6 @@ pub struct RayTracer<T: Hittable + Sync> {
     world: T,
 }
 
-const SAMPLES: usize = 8;
-
 impl<T: Hittable + Sync> RayTracer<T> {
     pub fn new(world: T) -> Self {
         let cam = Camera::default();
@@ -49,15 +47,11 @@ impl<T: Hittable + Sync> RayTracer<T> {
         self.gen = self.cam.ray_generator();
     }
 
-    pub fn get_pixel(&self, x: f32, y: f32, resx: f32, resy: f32) -> Color {
-        let mut col = Color::zero();
-        for _ in 0..SAMPLES {
-            let ray = self.gen.ray(
-                x + resx * rand::random::<f32>(),
-                y + resy * rand::random::<f32>(),
-            );
-            col += self.ray_color(&ray, 4);
-        }
-        col / SAMPLES as f32
+    pub fn get_sample(&self, x: f32, y: f32, resx: f32, resy: f32) -> Color {
+        let ray = self.gen.ray(
+            x + resx * rand::random::<f32>(),
+            y + resy * rand::random::<f32>(),
+        );
+        self.ray_color(&ray, 4)
     }
 }
