@@ -1,5 +1,6 @@
 pub mod sphere;
 
+use crate::aabb::AABB;
 use crate::material::Material;
 use crate::ray::Ray;
 use ordered_float::OrderedFloat;
@@ -8,11 +9,16 @@ use ultraviolet::Vec3;
 
 pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
+    fn bbox(&self) -> Option<AABB>;
 }
 
 impl Hittable for Box<dyn Hittable> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         self.deref().hit(ray, t_min, t_max)
+    }
+
+    fn bbox(&self) -> Option<AABB> {
+        self.deref().bbox()
     }
 }
 
@@ -22,6 +28,15 @@ impl<T: Hittable> Hittable for &[T] {
             .filter_map(move |x| x.hit(ray, t_min, t_max))
             .min_by_key(|rec| OrderedFloat(rec.t))
     }
+
+    fn bbox(&self) -> Option<AABB> {
+        let mut bbox = self.first()?.bbox()?;
+        for obj in self.iter().skip(1) {
+            let bbox_o = obj.bbox()?;
+            bbox.extend(bbox_o);
+        }
+        Some(bbox)
+    }
 }
 
 impl<T: Hittable> Hittable for Vec<T> {
@@ -29,6 +44,10 @@ impl<T: Hittable> Hittable for Vec<T> {
         self.iter()
             .filter_map(move |x| x.hit(ray, t_min, t_max))
             .min_by_key(|rec| OrderedFloat(rec.t))
+    }
+
+    fn bbox(&self) -> Option<AABB> {
+        self.as_slice().bbox()
     }
 }
 

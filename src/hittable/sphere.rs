@@ -1,3 +1,4 @@
+use crate::aabb::AABB;
 use crate::hittable::{Hit, Hittable};
 use crate::material::Material;
 use crate::ray::Ray;
@@ -33,5 +34,12 @@ impl<T: Material> Hittable for Sphere<T> {
         let p = r.at(t);
         let outward_normal = (p - self.center) / self.radius;
         Some(Hit::new(r, p, outward_normal, t, &self.mat))
+    }
+
+    fn bbox(&self) -> Option<AABB> {
+        Some(AABB::new(
+            self.center - Vec3::broadcast(self.radius),
+            self.center + Vec3::broadcast(self.radius),
+        ))
     }
 }
