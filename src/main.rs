@@ -9,6 +9,7 @@ mod raytrace;
 mod render;
 mod utils;
 
+use crate::bvh::BVH;
 use crate::hittable::sphere::Sphere;
 use crate::hittable::Hittable;
 use crate::image_gen::ImageProvider;
@@ -18,8 +19,6 @@ use crate::render::Renderer;
 use miniquad::*;
 use std::time::Instant;
 use ultraviolet::Vec3;
-use std::sync::Arc;
-use crate::bvh::BVHNode;
 
 struct Stage {
     renderer: Renderer,
@@ -29,9 +28,9 @@ struct Stage {
 }
 
 fn random_scene() -> impl Hittable {
-    let mut objects: Vec<Arc<dyn Hittable>> = vec![];
+    let mut objects: Vec<Box<dyn Hittable>> = vec![];
 
-    objects.push(Arc::new(Sphere {
+    objects.push(Box::new(Sphere {
         center: vec3(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat: Lambertian::new(Vec3::broadcast(0.5)),
@@ -51,7 +50,7 @@ fn random_scene() -> impl Hittable {
                     // diffuse
                     let albedo = Vec3::from(rand::random::<[f32; 3]>())
                         * Vec3::from(rand::random::<[f32; 3]>());
-                    objects.push(Arc::new(Sphere {
+                    objects.push(Box::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Lambertian::new(albedo),
@@ -61,14 +60,14 @@ fn random_scene() -> impl Hittable {
                     let albedo =
                         Vec3::broadcast(0.5) + Vec3::from(rand::random::<[f32; 3]>()) * 0.5;
                     let fuzz = rand::random::<f32>() * 0.5;
-                    objects.push(Arc::new(Sphere {
+                    objects.push(Box::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Metal::new(albedo, fuzz),
                     }));
                 } else {
                     // glass
-                    objects.push(Arc::new(Sphere {
+                    objects.push(Box::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Dielectric::new(1.5),
@@ -78,25 +77,25 @@ fn random_scene() -> impl Hittable {
         }
     }
 
-    objects.push(Arc::new(Sphere {
+    objects.push(Box::new(Sphere {
         center: vec3(0.0, 1.0, 0.0),
         radius: 1.0,
         mat: Dielectric::new(1.5),
     }));
 
-    objects.push(Arc::new(Sphere {
+    objects.push(Box::new(Sphere {
         center: vec3(-4.0, 1.0, 0.0),
         radius: 1.0,
         mat: Lambertian::new(vec3(0.4, 0.2, 0.1)),
     }));
 
-    objects.push(Arc::new(Sphere {
+    objects.push(Box::new(Sphere {
         center: vec3(4.0, 1.0, 0.0),
         radius: 1.0,
         mat: Metal::new(vec3(0.7, 0.6, 0.5), 0.0),
     }));
 
-    return BVHNode::new(&mut objects);
+    return BVH::new(objects);
 }
 
 impl Stage {

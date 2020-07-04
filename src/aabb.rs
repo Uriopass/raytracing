@@ -40,7 +40,7 @@ impl AABB {
     pub fn extend(&self, other: &AABB) -> AABB {
         Self {
             lo: v_min(self.lo, other.lo),
-            hi: v_max(self.lo, other.hi),
+            hi: v_max(self.hi, other.hi),
         }
     }
 }
