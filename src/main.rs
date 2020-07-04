@@ -1,4 +1,5 @@
 mod aabb;
+mod bvh;
 mod camera;
 mod hittable;
 mod image_gen;
@@ -17,20 +18,20 @@ use crate::render::Renderer;
 use miniquad::*;
 use std::time::Instant;
 use ultraviolet::Vec3;
-
-type HittableList = Vec<Box<dyn Hittable>>;
+use std::sync::Arc;
+use crate::bvh::BVHNode;
 
 struct Stage {
     renderer: Renderer,
     provider: ImageProvider,
-    tracer: RayTracer<HittableList>,
+    tracer: RayTracer<Box<dyn Hittable>>,
     last: Option<(f32, f32)>,
 }
 
-fn random_scene() -> HittableList {
-    let mut world: HittableList = vec![];
+fn random_scene() -> impl Hittable {
+    let mut objects: Vec<Arc<dyn Hittable>> = vec![];
 
-    world.push(Box::new(Sphere {
+    objects.push(Arc::new(Sphere {
         center: vec3(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat: Lambertian::new(Vec3::broadcast(0.5)),
@@ -50,7 +51,7 @@ fn random_scene() -> HittableList {
                     // diffuse
                     let albedo = Vec3::from(rand::random::<[f32; 3]>())
                         * Vec3::from(rand::random::<[f32; 3]>());
-                    world.push(Box::new(Sphere {
+                    objects.push(Arc::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Lambertian::new(albedo),
@@ -60,14 +61,14 @@ fn random_scene() -> HittableList {
                     let albedo =
                         Vec3::broadcast(0.5) + Vec3::from(rand::random::<[f32; 3]>()) * 0.5;
                     let fuzz = rand::random::<f32>() * 0.5;
-                    world.push(Box::new(Sphere {
+                    objects.push(Arc::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Metal::new(albedo, fuzz),
                     }));
                 } else {
                     // glass
-                    world.push(Box::new(Sphere {
+                    objects.push(Arc::new(Sphere {
                         center,
                         radius: 0.2,
                         mat: Dielectric::new(1.5),
@@ -77,25 +78,25 @@ fn random_scene() -> HittableList {
         }
     }
 
-    world.push(Box::new(Sphere {
+    objects.push(Arc::new(Sphere {
         center: vec3(0.0, 1.0, 0.0),
         radius: 1.0,
         mat: Dielectric::new(1.5),
     }));
 
-    world.push(Box::new(Sphere {
+    objects.push(Arc::new(Sphere {
         center: vec3(-4.0, 1.0, 0.0),
         radius: 1.0,
         mat: Lambertian::new(vec3(0.4, 0.2, 0.1)),
     }));
 
-    world.push(Box::new(Sphere {
+    objects.push(Arc::new(Sphere {
         center: vec3(4.0, 1.0, 0.0),
         radius: 1.0,
         mat: Metal::new(vec3(0.7, 0.6, 0.5), 0.0),
     }));
 
-    return world;
+    return BVHNode::new(&mut objects);
 }
 
 impl Stage {
@@ -105,7 +106,7 @@ impl Stage {
         Stage {
             renderer: Renderer::new(ctx),
             provider: ImageProvider::new(),
-            tracer: RayTracer::new(world),
+            tracer: RayTracer::new(Box::new(world)),
             last: None,
         }
     }
@@ -125,6 +126,25 @@ impl EventHandler for Stage {
 
         self.renderer.draw_pixels(ctx, pixels);
     }
+    fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
+        if let Some((lx, ly)) = self.last {
+            self.tracer.cam.eye_horiz(0.003 * (x - lx) as f32);
+            self.tracer
+                .cam
+                .eye_vert(0.003 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
+            self.provider.moved();
+            self.last = Some((x, y));
+        }
+    }
+
+    fn mouse_button_down_event(&mut self, _: &mut Context, _: MouseButton, x: f32, y: f32) {
+        self.last = Some((x, y));
+    }
+
+    fn mouse_button_up_event(&mut self, _: &mut Context, _: MouseButton, _x: f32, _y: f32) {
+        self.last = None;
+    }
+
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
@@ -163,25 +183,6 @@ impl EventHandler for Stage {
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
-
-    fn mouse_motion_event(&mut self, _: &mut Context, x: f32, y: f32) {
-        if let Some((lx, ly)) = self.last {
-            self.tracer.cam.eye_horiz(0.003 * (x - lx) as f32);
-            self.tracer
-                .cam
-                .eye_vert(0.003 * (y - ly) as f32 * self.tracer.cam.aspect_ratio);
-            self.provider.moved();
-            self.last = Some((x, y));
-        }
-    }
-
-    fn mouse_button_down_event(&mut self, _: &mut Context, _: MouseButton, x: f32, y: f32) {
-        self.last = Some((x, y));
-    }
-
-    fn mouse_button_up_event(&mut self, _: &mut Context, _: MouseButton, _x: f32, _y: f32) {
-        self.last = None;
-    }
 }
 
 fn main() {

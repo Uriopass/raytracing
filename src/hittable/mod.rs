@@ -5,14 +5,35 @@ use crate::material::Material;
 use crate::ray::Ray;
 use ordered_float::OrderedFloat;
 use std::ops::Deref;
+use std::sync::Arc;
 use ultraviolet::Vec3;
 
-pub trait Hittable: Sync {
+pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
     fn bbox(&self) -> Option<AABB>;
 }
 
+impl Hittable for () {
+    fn hit(&self, _ray: &Ray, _t_min: f32, _t_max: f32) -> Option<Hit> {
+        None
+    }
+
+    fn bbox(&self) -> Option<AABB> {
+        Some(AABB::empty())
+    }
+}
+
 impl Hittable for Box<dyn Hittable> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+        self.deref().hit(ray, t_min, t_max)
+    }
+
+    fn bbox(&self) -> Option<AABB> {
+        self.deref().bbox()
+    }
+}
+
+impl Hittable for Arc<dyn Hittable> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         self.deref().hit(ray, t_min, t_max)
     }
@@ -33,7 +54,7 @@ impl<T: Hittable> Hittable for &[T] {
         let mut bbox = self.first()?.bbox()?;
         for obj in self.iter().skip(1) {
             let bbox_o = obj.bbox()?;
-            bbox.extend(bbox_o);
+            bbox = bbox.extend(&bbox_o);
         }
         Some(bbox)
     }

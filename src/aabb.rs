@@ -2,14 +2,22 @@ use crate::ray::Ray;
 use crate::utils::{v_max, v_min};
 use ultraviolet::Vec3;
 
+#[derive(Clone, Copy)]
 pub struct AABB {
-    lo: Vec3,
-    hi: Vec3,
+    pub lo: Vec3,
+    pub hi: Vec3,
 }
 
 impl AABB {
     pub fn new(lo: Vec3, hi: Vec3) -> Self {
         Self { lo, hi }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            lo: Vec3::broadcast(0.0),
+            hi: Vec3::broadcast(0.0),
+        }
     }
 
     pub fn hit(&self, r: &Ray, mut tmin: f32, mut tmax: f32) -> bool {
@@ -29,8 +37,10 @@ impl AABB {
         true
     }
 
-    pub fn extend(&mut self, other: AABB) {
-        self.lo = v_min(self.lo, other.lo);
-        self.hi = v_max(self.lo, other.hi);
+    pub fn extend(&self, other: &AABB) -> AABB {
+        Self {
+            lo: v_min(self.lo, other.lo),
+            hi: v_max(self.lo, other.hi),
+        }
     }
 }
