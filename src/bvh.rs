@@ -3,27 +3,44 @@ use crate::hittable::{Hit, Hittable};
 use crate::ray::Ray;
 use rand::prelude::SliceRandom;
 
-enum BVHNode {
+enum BVHNodeKind {
     Leaf(usize),
     Branch {
-        bbox: AABB,
         left: Box<BVHNode>,
         right: Box<BVHNode>,
     },
 }
 
+struct BVHNode {
+    kind: BVHNodeKind,
+    bbox: AABB,
+}
+
 impl BVHNode {
-    fn new(objects: &mut [Box<dyn Hittable>], offset: usize) -> (Self, AABB) {
+    fn new(objects: &mut [Box<dyn Hittable>], offset: usize) -> Self {
         match objects {
             [] => panic!("empty node"),
-            [a] => (Self::Leaf(offset), a.bbox().unwrap()),
+            [a] => Self {
+                kind: BVHNodeKind::Leaf(offset),
+                bbox: a.bbox().unwrap(),
+            },
             [a, b] => {
-                let bbox = a.bbox().unwrap().extend(&b.bbox().unwrap());
-                (BVHNode::Branch {
-                    left: Box::new(Self::Leaf(offset)),
-                    right: Box::new(Self::Leaf(offset+1)),
-                    bbox,
-                }, bbox)
+                let abb = a.bbox().unwrap();
+                let bbb = b.bbox().unwrap();
+                let bbox = abb.extend(&bbb);
+                Self {
+                   kind: BVHNodeKind::Branch {
+                       left: Box::new(BVHNode {
+                           kind: BVHNodeKind::Leaf(offset),
+                           bbox: abb,
+                       }),
+                       right: Box::new(BVHNode {
+                           kind: BVHNodeKind::Leaf(offset + 1),
+                           bbox: bbb,
+                       }),
+                   },
+                    bbox
+                }
             }
             xs => {
                 let axis = *[0 as usize, 1, 2].choose(&mut rand::thread_rng()).unwrap();
@@ -38,26 +55,21 @@ impl BVHNode {
 
                 let off_right = offset + left.len();
 
-                let ((left, lbb), (right, rbb)) = if l > 50 {
+                let (left, right) = if l > 50 {
                     rayon::join(|| Self::new(left, offset), || Self::new(right, off_right))
                 } else {
                     (Self::new(left, offset), Self::new(right, off_right))
                 };
 
-                let bbox = lbb.extend(&rbb);
-                (BVHNode::Branch {
-                    left: Box::new(left),
-                    right: Box::new(right),
-                    bbox,
-                }, bbox)
+                let bbox = left.bbox.extend(&right.bbox);
+                Self {
+                    kind: BVHNodeKind::Branch {
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    },
+                    bbox
+                }
             }
-        }
-    }
-
-    pub fn bbox(&self, objs: &[Box<dyn Hittable>]) -> AABB {
-        match &self {
-            BVHNode::Leaf(i) => objs[*i].bbox().unwrap(),
-            BVHNode::Branch { bbox, .. } => *bbox,
         }
     }
 
@@ -68,13 +80,13 @@ impl BVHNode {
         t_max: f32,
         objs: &'a [Box<dyn Hittable>],
     ) -> Option<Hit<'a>> {
-        if !self.bbox(objs).hit(ray, t_min, t_max) || t_max <= t_min {
+        if !self.bbox.hit(ray, t_min, t_max) || t_max <= t_min {
             return None;
         }
 
-        match self {
-            &BVHNode::Leaf(i) => unsafe { objs.get_unchecked(i) }.hit(ray, t_min, t_max),
-            BVHNode::Branch { left, right, .. } => {
+        match &self.kind {
+            &BVHNodeKind::Leaf(i) => unsafe { objs.get_unchecked(i) }.hit(ray, t_min, t_max),
+            BVHNodeKind::Branch { left, right, .. } => {
                 let hit1 = left.hit(ray, t_min, t_max, objs);
                 let hit2 = right.hit(ray, t_min, hit1.as_ref().map_or(t_max, |h| h.t), objs);
 
@@ -98,7 +110,7 @@ impl BVH {
             };
         }
 
-        let (node, _) = BVHNode::new(&mut objects, 0);
+        let node = BVHNode::new(&mut objects, 0);
         Self {
             objects,
             node: Some(node),
@@ -115,7 +127,6 @@ impl Hittable for BVH {
     }
 
     fn bbox(&self) -> Option<AABB> {
-        let objs = &self.objects;
-        self.node.as_ref().map(|x| x.bbox(objs))
+        self.node.as_ref().map(|x| x.bbox)
     }
 }
