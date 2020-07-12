@@ -30,11 +30,11 @@ struct Stage {
 fn random_scene() -> impl Hittable {
     let mut objects: Vec<Box<dyn Hittable>> = vec![];
 
-    objects.push(Box::new(Sphere {
+    let ground = Box::new(Sphere {
         center: vec3(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat: Lambertian::new(Vec3::broadcast(0.5)),
-    }));
+    });
 
     for a in -5..5 {
         for b in -5..5 {
@@ -95,7 +95,7 @@ fn random_scene() -> impl Hittable {
         mat: Metal::new(vec3(0.7, 0.6, 0.5), 0.0),
     }));
 
-    return BVH::new(objects);
+    return vec![ground as Box<dyn Hittable>, Box::new(BVH::new(objects))];
 }
 
 impl Stage {
